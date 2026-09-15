@@ -8,17 +8,29 @@ API_HOST = "https://mj5ctxf8e3.re.qweatherapi.com"
 TIANJIN_CODE = "101030100"
 
 @tool
-def get_weather(city_code: str = "101030100", days: int = 3) -> list:
-    """查询指定城市未来几天的天气。输入城市代码和天数，返回天气列表。"""
-    # 和风天气只支持 3d 和 7d，其他值一律转成 3
+def get_weather(city: str = "天津", days: int = 7) -> list:
+    """查询指定城市未来几天的天气。输入城市名和天数（3或7），返回天气列表。"""
     if days not in [3, 7]:
-        days = 3
+        days = 7
 
-    print("get_weather 被调用，参数:", city_code, days)
+    # 第一步：用 GeoAPI 查城市代码
+    geo_url = f"{API_HOST}/geo/v2/city/lookup"
+    geo_params = {"location": city, "key": API_KEY}
+    geo_response = requests.get(geo_url, params=geo_params)
 
+    try:
+        geo_data = geo_response.json()
+    except Exception:
+        return {"error": f"城市查询失败，状态码 {geo_response.status_code}"}
+
+    if geo_data.get("code") != "200" or not geo_data.get("location"):
+        return {"error": f"找不到城市：{city}"}
+
+    city_code = geo_data["location"][0]["id"]
+
+    # 第二步：查天气
     url = f"{API_HOST}/v7/weather/{days}d"
     params = {"location": city_code, "key": API_KEY}
-
     response = requests.get(url, params=params)
 
     try:
@@ -157,10 +169,10 @@ def calculate_budget(days: int, people: int = 1, transport_per_day: float = 30, 
     }
 
 @tool
-def plan_route(attractions: list) -> str:
-    """规划景点之间的路线。输入景点名称列表，返回推荐的游览顺序和交通方式。"""
+def plan_route(attractions: list, city: str = "天津") -> str:
+    """规划景点之间的路线。输入景点列表和城市名，返回推荐的游览顺序和交通方式。"""
     spots = "、".join(attractions)
-    prompt = f"""我有以下几个天津的景点要去：{spots}
+    prompt = f"""我有以下几个{city}的景点要去：{spots}
 
 请帮我规划一个合理的游览顺序，并说明每个景点之间怎么走（步行、地铁、打车）。
 考虑距离和游览效率，返回一段简洁的文字说明。"""
