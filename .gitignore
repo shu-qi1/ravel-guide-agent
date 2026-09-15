@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.idea/
+*.pyc
+.env
+key3-private.pem
+ed25519-private.pem
+ed25519-private-new.pem
+test_alert_new.py
+linshi.py
